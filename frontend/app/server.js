@@ -6,6 +6,7 @@ app.engine('.html', require('ejs').__express);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'html');
 
+app.use(express.static(__dirname + '/static'));
 app.use(morgan('combined'));
 
 app.use('/', router);
