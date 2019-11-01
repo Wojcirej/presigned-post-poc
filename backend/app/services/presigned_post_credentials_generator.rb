@@ -1,7 +1,7 @@
 class PresignedPostCredentialsGenerator
 
   def initialize(expiration_time = 15)
-    @expiration_time = (expiration_time.to_i || 15).minutes.from_now
+    @expiration_time = (expiration_time || 15).minutes.from_now
   end
 
   def self.call(expiration_time = 15)
