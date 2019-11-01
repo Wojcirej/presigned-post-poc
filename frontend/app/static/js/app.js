@@ -17,11 +17,10 @@ const getPresignedPostLinkFromStorage = () => {
   return JSON.parse(sessionStorage.getItem('link'));
 }
 
-const uploadFile = async(element) => {
+const generateS3Destination = filename => 'tmp/' + Date.now() + '/' + filename;
+
+const prepareUploadPayload = (file, path, credentials) => {
   const formData = new FormData();
-  const file = element.files[0];
-  const path = 'tmp/' + Date.now() + '/' + file.name;
-  const credentials = getPresignedPostLinkFromStorage();
 
   formData.append('Content-Type', file.type);
   formData.append('key', path);
@@ -31,7 +30,25 @@ const uploadFile = async(element) => {
   };
 
   formData.append('file', file);
-  const result = await uploadToS3(credentials.url, formData);
+  return formData;
+};
+
+const uploadFile = async(element) => {
+  const file = element.files[0];
+  const path = generateS3Destination(file.name);
+  const credentials = getPresignedPostLinkFromStorage();
+  const payload = prepareUploadPayload(file, path, credentials);
+
+  try {
+    const result = await uploadToS3(credentials.url, payload);
+    const publicLink = await getPublicLink(path);
+
+    setImagePreview(publicLink);
+    clearFileInput();
+  }
+  catch(error) {
+    alert('Error while trying to upload image, please try again later');
+  };
 };
 
 const uploadToS3 = async(url, payload) => {
@@ -39,6 +56,22 @@ const uploadToS3 = async(url, payload) => {
     method: 'post',
     body: payload,
   });
+};
+
+const getPublicLink = async(key) => {
+  const result = await fetch(`http://localhost:3000/presigned_url?key=${key}`);
+  const json = await result.json();
+  return json.presignedUrl;
+};
+
+const setImagePreview = (imageUrl) => {
+  const imgPreview = document.getElementById('image_preview');
+  imgPreview.src = imageUrl;
+};
+
+const clearFileInput = () => {
+  const inputFile = document.getElementById('file_input');
+  inputFile.value = '';
 };
 
 getPresignedPostLink();
